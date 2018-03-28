@@ -1,17 +1,48 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 
-def fit_data_without_outliers(x, y):
-    for k in range(0, (len(x)-1)):
-        if x[k] < 12000:
-            np.delete(x, k)
-            np.delete(y, k)
-    plt.plot(x, y)
+def filter_stat_data(x, y):
+    new_x = []
+    new_y = []
+    for k in range(0, (len(x) - 1)):
+        if x[k] > 12000:
+            new_x.append(x[k])
+            new_y.append(y[k])
+    return new_x, new_y
+
+
+def fit_data(x, y):
+    return np.polyfit(x, y, 1)
+
+
+def find_error(a, b, x, y):
+    y_fit = np.multiply(a, x) + b
+    return np.abs(y_fit - y)
+
+
+def remove_outliers(err, x, y):
+    new_x = []
+    new_y = []
+    mean = np.mean(err)
+    sd = np.std(err)
+    z = (err - mean)/sd
+    for i in range(0, len(z)):
+        if abs(z[i]) < 2:
+            new_x.append(x[i])
+            new_y.append(y[i])
+    return new_x, new_y
+
+
+def plot_data(est_a, est_b, a, b, x, y):
+    y_est = np.multiply(est_a, x) + est_b
+    y_fit = np.multiply(a, x) + b
+    plt.plot(x, y_est, 'g')
+    plt.plot(x, y_fit, 'b')
+    plt.plot(x, y, 'ro')
     plt.xlabel('ADC')
     plt.ylabel('force')
     plt.show()
-    return np.polyfit(x, y, 1)
 
 
 arr_a_x = []
@@ -19,10 +50,11 @@ arr_b_x = []
 arr_a_y = []
 arr_b_y = []
 
+
 if __name__ == '__main__':
 
     positions = np.loadtxt('data/positions.txt')
-    for i in range(1, 36):
+    for i in range(1, 37):
 
         # 1st and 2nd column data from file are x-direction data
         # 3rd and 4th column are y-direction data
@@ -35,8 +67,23 @@ if __name__ == '__main__':
         adc_y = data_y[:, 1]
 
         # Find parameters for linear equation from data fitting
-        a_x, b_x = fit_data_without_outliers(adc_x, force_x)
-        a_y, b_y = fit_data_without_outliers(adc_y, force_y)
+        new_adc_x, new_force_x = filter_stat_data(adc_x, force_x)
+        new_adc_y, new_force_y = filter_stat_data(adc_y, force_y)
+        # Find parameters for linear equation from data fitting
+        est_a_x, est_b_x = fit_data(new_adc_x, new_force_x)
+        est_a_y, est_b_y = fit_data(new_adc_y, new_force_y)
+        # find difference between fitted line and data
+        err_x = find_error(est_a_x, est_b_x, new_adc_x, new_force_x)
+        err_y = find_error(est_a_y, est_b_y, new_adc_y, new_force_y)
+        # remove errors from data that are more than
+        adc_x, force_x = remove_outliers(err_x, new_adc_x, new_force_x)
+        adc_y, force_y = remove_outliers(err_y, new_adc_y, new_force_y)
+        # Find parameters after outliers removal
+        a_x, b_x = fit_data(adc_x, force_x)
+        a_y, b_y = fit_data(adc_y, force_y)
+
+        plot_data(est_a_x, est_b_x, a_x, b_x, adc_x, force_x)
+        plot_data(est_a_y, est_b_y, a_y, b_y, adc_y, force_y)
 
         # write data in array
         arr_a_x.append(a_x)
@@ -44,7 +91,7 @@ if __name__ == '__main__':
         arr_a_y.append(a_y)
         arr_b_y.append(b_y)
 
-    file_x = open('data_analysis_results_x.txt', 'a')
+    file_x = open('data_analysis_results_x.txt', 'w')
     # loop through each item in the list and write it to the output file
     for (pos, a, b) \
             in zip(positions, arr_a_x, arr_b_x):
@@ -52,15 +99,13 @@ if __name__ == '__main__':
     file_x.write('\n \n')
     file_x.close()
 
-    file_y = open('data_analysis_results_y.txt', 'a')
+    file_y = open('data_analysis_results_y.txt', 'w')
     # loop through each item in the list and write it to the output file
     for (pos, a, b) \
             in zip(positions, arr_a_y, arr_b_y):
         file_y.write('{} {} {} \n'.format(str(pos), str(a), str(b)))
     file_y.write('\n \n')
     file_y.close()
-
-
 
 
 

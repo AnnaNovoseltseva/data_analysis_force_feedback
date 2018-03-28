@@ -12,8 +12,8 @@ def filter_stat_data(x, y):
     return new_x, new_y
 
 
-def fit_data(x, y):
-    return np.polyfit(y, x, 1)
+def fit_data(y, x):
+    return np.polyfit(x, y, 1)
 
 
 def find_error(a, b, x, y):
@@ -68,17 +68,8 @@ if __name__ == '__main__':
         new_adc_x, new_force_x = filter_stat_data(adc_x, force_x)
         new_adc_y, new_force_y = filter_stat_data(adc_y, force_y)
         # Find parameters for linear equation from data fitting
-        est_a_x, est_b_x = np.polyfit(new_adc_x, new_force_x, 1)
-        est_a_y, est_b_y = np.polyfit(new_adc_y, new_force_y, 1)
-        # find difference between fitted line and data
-        err_x = find_error(est_a_x, est_b_x, new_adc_x, new_force_x)
-        err_y = find_error(est_a_y, est_b_y, new_adc_y, new_force_y)
-        # remove errors from data that are more than
-        adc_x, force_x = remove_outliers(err_x, new_adc_x, new_force_x)
-        adc_y, force_y = remove_outliers(err_y, new_adc_y, new_force_y)
-        # Find parameters after outliers removal
-        a_x, b_x = fit_data(adc_x, force_x)
-        a_y, b_y = fit_data(adc_y, force_y)
+        a_x, b_x = fit_data(new_adc_x, new_force_x)
+        a_y, b_y = fit_data(new_adc_y, new_force_y)
 
         plot_data(a_x, b_x, adc_x, force_x)
         plot_data(a_y, b_y, adc_y, force_y)
@@ -89,7 +80,7 @@ if __name__ == '__main__':
         arr_a_y.append(a_y)
         arr_b_y.append(b_y)
 
-    file_x = open('data_analysis_results_x.txt', 'w')
+    file_x = open('data_analysis_results_x_nofilter.txt', 'w')
     # loop through each item in the list and write it to the output file
     for (pos, a, b) \
             in zip(positions, arr_a_x, arr_b_x):
@@ -97,16 +88,10 @@ if __name__ == '__main__':
     file_x.write('\n \n')
     file_x.close()
 
-    file_y = open('data_analysis_results_y.txt', 'w')
+    file_y = open('data_analysis_results_y_nofilter.txt', 'w')
     # loop through each item in the list and write it to the output file
     for (pos, a, b) \
             in zip(positions, arr_a_y, arr_b_y):
         file_y.write('{} {} {} \n'.format(str(pos), str(a), str(b)))
     file_y.write('\n \n')
     file_y.close()
-
-
-
-
-
-

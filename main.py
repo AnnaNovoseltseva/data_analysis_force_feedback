@@ -1,7 +1,16 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def fit_data_without_outliers(x, y):
+    for k in range(0, (len(x)-1)):
+        if x[k] < 12000:
+            np.delete(x, k)
+            np.delete(y, k)
+    plt.plot(x, y)
+    plt.xlabel('ADC')
+    plt.ylabel('force')
+    plt.show()
     return np.polyfit(x, y, 1)
 
 
